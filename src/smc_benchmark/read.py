@@ -3,7 +3,7 @@ import pathlib as pl
 import numpy as np
 import pandas as pd
 
-from smc_benchmark._naming import KIT_NAMING, KUL_NAMING, UT_NAMING
+from smc_benchmark._naming import KIT_NAMING, KUL_NAMING, UT_NAMING, TUM_NAMING
 from smc_benchmark._utils import decode_filename
 
 # Test configuirations
@@ -16,6 +16,7 @@ CONFIG4 = "7mm 100x100"
 KIT = "kit"
 UT = "ut"
 KUL = "kul"
+TUM = "tum"
 
 # Mapping between configuration and number for KIT, UT
 CONFIG_TO_NUMBER_KIT = {
@@ -27,7 +28,7 @@ CONFIG_TO_NUMBER_KIT = {
 NUMBER_TO_CONFIG_KIT = {v: k for k, values in CONFIG_TO_NUMBER_KIT.items() for v in values}
 
 # File extensions of the data files
-FILE_EXTENSION = {KIT: "*.TXT", UT: "*.csv", KUL: "*.csv"}
+FILE_EXTENSION = {KIT: "*.TXT", UT: "*.csv", KUL: "*.csv", TUM: "*.csv"}
 
 
 def read(institution, folder):
@@ -61,6 +62,8 @@ def read(institution, folder):
             pd_data = _read_ut(file)
         elif institution == KUL:
             pd_data = _read_kul(file)
+        elif institution == TUM:
+            pd_data = _read_tum(file)
         else:
             raise ValueError(f"Insitution '{institution}' not found")
 
@@ -93,4 +96,9 @@ def _read_kul(file):
 
 
 def _read_tum():
-    pass
+    """Read TUM data file."""
+    data = pd.read_csv(file, sep=";", names=TUM_NAMING, skiprows=1, quotechar='"', decimal=",")
+    data["h"] *= -1    # convert gap height to positive values
+    data = data.loc[data["h"] <= 11.05]    # Remove rows before the gap reached 11.05mm (11mm plus one layer of kapton)
+    data = data.loc[:data["h"].idxmin()]    # Remove rows after the minimum gap height was reached
+    return data
